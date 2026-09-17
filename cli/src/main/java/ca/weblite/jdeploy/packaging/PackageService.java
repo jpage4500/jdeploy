@@ -5,11 +5,13 @@ import ca.weblite.jdeploy.JDeploy;
 import ca.weblite.jdeploy.app.AppInfo;
 import ca.weblite.jdeploy.app.JVMSpecification;
 import ca.weblite.jdeploy.models.CommandSpecParser;
+import ca.weblite.jdeploy.models.DocumentTypeAssociation;
 import ca.weblite.jdeploy.app.permissions.PermissionRequest;
 import ca.weblite.jdeploy.app.permissions.PermissionRequestService;
 import ca.weblite.jdeploy.appbundler.*;
 import ca.weblite.jdeploy.appbundler.mac.DmgCreator;
 import ca.weblite.jdeploy.environment.Environment;
+import ca.weblite.jdeploy.helpers.FileAssociationsHelper;
 import ca.weblite.jdeploy.helpers.NpmPackageUtils;
 import ca.weblite.jdeploy.helpers.PrereleaseHelper;
 import ca.weblite.jdeploy.services.BundleCodeService;
@@ -942,6 +944,25 @@ public class PackageService implements BundleConstants {
         // Parse CLI commands from jdeploy config for bundler use (e.g., embedded LaunchAgent plists)
         JSONObject jdeployJson = new JSONObject(context.mj());
         appInfo.setCommands(CommandSpecParser.parseCommands(jdeployJson));
+
+        // File and directory associations from jdeploy.documentTypes, so that bundles declare
+        // the same associations that the installer and jpackage routes already do.
+        for (
+                DocumentTypeAssociation documentType
+                : FileAssociationsHelper.getDocumentTypeAssociationsFromPackageJSON(context.packageJsonObject())
+        ) {
+            if (documentType.isDirectory()) {
+                appInfo.setDirectoryAssociation(documentType);
+            } else {
+                appInfo.addDocumentMimetype(documentType.getExtension(), documentType.getMimetype());
+                if (documentType.getIconPath() != null) {
+                    appInfo.addDocumentTypeIcon(documentType.getExtension(), documentType.getIconPath());
+                }
+                if (documentType.isEditor()) {
+                    appInfo.setDocumentTypeEditor(documentType.getExtension());
+                }
+            }
+        }
 
         String jarPath = context.getString("jar", null);
         if (jarPath != null) {

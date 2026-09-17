@@ -911,14 +911,21 @@ public class MacBundler {
         out.start("plist","version","1.0");
         out.start("dict");
 
+        // Emit a single CFBundleDocumentTypes key: a plist dict must not repeat a key, and
+        // parsers keep only the last occurrence, which would drop all but one association.
+        boolean hasDocumentTypes = !app.getExtensions().isEmpty() || app.hasDirectoryAssociation();
+        if (hasDocumentTypes) {
+            out.start("key").text("CFBundleDocumentTypes").end();
+            out.start("array");
+        }
+
         for(String ext : app.getExtensions()) {
             //file extensions
             String role = "Viewer";
             if (app.isEditableExtension(ext)) {
                 role = "Editor";
             }
-            out.start("key").text("CFBundleDocumentTypes").end();
-            out.start("array").start("dict");
+            out.start("dict");
                 out.start("key").text("CFBundleTypeExtensions").end();
                 out.start("array").start("string").text(ext).end().end();
                 out.start("key").text("CFBundleTypeName").end();
@@ -935,15 +942,14 @@ public class MacBundler {
                     out.start("string").text(ifile.getName()).end();
                     //copy over the icon
                 }
-            out.end().end();
+            out.end();
         }
 
         // Directory associations
         if (app.hasDirectoryAssociation()) {
             String role = app.getDirectoryRole();
 
-            out.start("key").text("CFBundleDocumentTypes").end();
-            out.start("array").start("dict");
+            out.start("dict");
                 // Use LSItemContentTypes for folder handling
                 out.start("key").text("LSItemContentTypes").end();
                 out.start("array");
@@ -963,7 +969,11 @@ public class MacBundler {
                     File ifile = new File(dirIcon);
                     out.start("string").text(ifile.getName()).end();
                 }
-            out.end().end();
+            out.end();
+        }
+
+        if (hasDocumentTypes) {
+            out.end();
         }
 
         if (app.hasUrlSchemes()) {
