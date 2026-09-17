@@ -119,6 +119,7 @@ public class Bundler {
         if (appInfo.getInitialAppVersion() != null && !appInfo.getInitialAppVersion().isEmpty()) {
             app.setInitialAppVersion(appInfo.getInitialAppVersion());
         }
+        app.setVersion(val(appInfo.getVersion(), appInfo.getInitialAppVersion()));
 
         if (url == null) throw new IllegalArgumentException("URL is required. It can be a file: url");
 
